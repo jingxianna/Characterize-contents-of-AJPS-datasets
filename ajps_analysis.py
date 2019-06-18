@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import json
+import pandas as pd
 
 
 def get_doi(page_number):
@@ -58,37 +59,53 @@ def get_content(doi):
         htmlcontent = requests.get(url, headers=headers, timeout=30)
         htmlcontent.raise_for_status()
         htmlcontent.encoding = 'utf-8'
+    except:
+        print("Request failed.")
+    else:
         r = htmlcontent.json()
         # with open("Log.txt", "at") as f:
         #     print(str(r), file=f)
 
-        # jsonDumpsIndentStr = json.dumps(r["ore:describes"]["ore:aggregates"], indent=2)
-        # print("jsonDumpsIndentStr=", jsonDumpsIndentStr)
-        print("Title:", r["ore:describes"]["schema:name"])
+        jsonDumpsIndentStr = json.dumps(r["ore:describes"]["ore:aggregates"], indent=2)
+        print("jsonDumpsIndentStr=", jsonDumpsIndentStr)
+        print("Title:", r["ore:describes"]["schema:name"].split(': ', 1)[1])
         print("DOI:", str(doi)[16:])
         print("Publication date:", r["ore:describes"]["schema:datePublished"])
         files = r["ore:describes"]["ore:aggregates"]
         total_size = 0
         for file in files:
             total_size += file['dvcore:filesize']
-        print("Total file size(Kb): '%.2f'", total_size/1024)
+            file_extension = file['schema:name'].split('.')[-1]
+            try:
+                if lang_dict[file_extension] in lang_num:
+                    lang_num[lang_dict[file_extension]] += 1
+            except KeyError:
+                continue
+        print("Total file size(Kb): %.2f" % (total_size / 1024))
         print('Number of files:', len(files))
+        print("Language count:", lang_num)
         print('Note:', type(r["ore:describes"]['citation:Notes']))
 
 
-    except:
-        return "Request failed."
-#
-# get_content("https://doi.org/10.7910/DVN/O6VHZZ")
+
+lang_dict = {'sh': 'bash', 'do': 'stata', 'jl': 'julia', 'py': 'python', 'R': 'R', 'c': 'C', 'cpp': 'C++'\
+            , 'm': 'Matlab', 'f': 'fortran', 'f90': 'fortran', 'sas': 'SAS', 'java': 'Java'}
+lang_num = {}
+for value in lang_dict.values():
+    lang_num[value] = 0
 
 
 
-if __name__ == "__main__":
-    doi_list = []
-    for page in range(38):
-        text = get_doi(page+1)
-        doi_list += parseHTML(text)
-    with open('doi.txt', 'a+') as f:
-        print(doi_list, len(doi_list), file=f)
-    for doi in doi_list:
-        get_content(doi)
+
+get_content("https://doi.org/10.7910/DVN/24800")
+
+
+# if __name__ == "__main__":
+#     doi_list = []
+#     for page in range(38):
+#         text = get_doi(page+1)
+#         doi_list += parseHTML(text)
+#     with open('doi.txt', 'a+') as f:
+#         print(doi_list, len(doi_list), file=f)
+#     for doi in doi_list:
+#         get_content(doi)
