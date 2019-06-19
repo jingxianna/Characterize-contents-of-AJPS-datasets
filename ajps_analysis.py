@@ -117,7 +117,7 @@ if __name__ == "__main__":
         doi_list += parseHTML(text)
     with open('doi.txt', 'w') as f:
         print(doi_list, len(doi_list), file=f)
-    with open('file_extention.txt', 'w') as g:
+    with open('file_extension.txt', 'w') as g:
         for doi in doi_list:
             print(doi, get_ext_list(doi), file=g)
             file_ext += get_ext_list(doi)
