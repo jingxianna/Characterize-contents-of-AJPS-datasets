@@ -66,7 +66,7 @@ def get_content(doi):
         files = r["ore:describes"]["ore:aggregates"]
         total_size = 0
         lang_num = {'bash': 0, 'stata': 0, 'julia': 0, 'python': 0, 'R': 0, 'C': 0, 'C++': 0, 'Matlab': 0, 'fortran': 0,
-                    'SAS': 0, 'Java': 0, 'SPSS': 0, 'Mathematica': 0, 'PHP': 0, 'Scilab': 0}
+                    'SAS': 0, 'Java': 0, 'SPSS': 0, 'Mathematica': 0, 'PHP': 0, 'Scilab': 0, 'ArcGIS': 0}
         for file in files:
             total_size += file['dvcore:filesize']
             file_extension = file['schema:name'].split('.')[-1]
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     lang_dict = {'sh': 'bash', 'do': 'stata', 'jl': 'julia', 'py': 'python', 'R': 'R', 'r': 'R', 'c': 'C', 'cpp': 'C++',
                  'm': 'Matlab', 'f': 'fortran', 'f90': 'fortran', 'sas': 'SAS', 'java': 'Java', '2012': 'stata',
                  'sps': 'SPSS', 'Rhistory[1]': 'R', 'mx': 'Mathematica', 'replication': 'stata', 'php': 'PHP',
-                 'nb': 'Mathematica', 'sci': 'Scilab'}
+                 'nb': 'Mathematica', 'sci': 'Scilab', 'shp': "ArcGIS"}
     columns = ['DOI', 'publication_date', 'total_size_kb', 'num_files', 'bash', 'stata', 'julia', 'python', 'R', 'C',
-               'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab']
+               'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS']
 
     for page in range(38):
         text = get_doi(page + 1)
