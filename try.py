@@ -1,0 +1,103 @@
+import os
+import csv
+import json
+import urllib
+import requests
+from bs4 import BeautifulSoup
+from collections import Counter
+
+# Use the search API to retrieve AJPS datasets
+# Since there are < 1000 datasets, we do not need to page through results
+url = 'https://dataverse.harvard.edu/api/search?q=*&subtree=ajps&type=dataset&start=0&per_page=1000'
+
+resp = requests.get(url)
+datasets = json.loads(resp.text)
+
+# To save time on future runs, keep a cache of downloaded data
+os.makedirs("cache", exist_ok=True)
+
+exts = Counter()
+for dataset in datasets['data']['items']:
+
+    doi = dataset['global_id']
+
+    # If we haven't retrieved this DOI, store it on disk. If we have, read the
+    # cache file.
+    cache_file = 'cache/' + urllib.parse.quote_plus(str(doi))
+    if not os.path.isfile(cache_file):
+        # print('Not using cache for %s' % doi)
+        url = 'https://dataverse.harvard.edu/api/datasets/export?exporter=OAI_ORE&persistentId=' + doi
+        resp = requests.get(url)
+        try:
+            r = json.loads(resp.text)
+            with open(cache_file, 'w') as f:
+                json.dump(r, f)
+        except json.decoder.JSONDecodeError:
+            print('There might be some problems with the link.', doi)
+    else:
+        # print('Using cache for %s' % doi)
+        with open(cache_file, 'r') as f:
+            r = json.load(f)
+
+    # For each file, increment a counter for the extension
+
+    files = r["ore:describes"]["ore:aggregates"]
+    for f in files:
+        ext = f['schema:name'].split('.')[-1].lower()
+        exts[ext] += 1
+
+    # out_dict.update(dict(exts))
+
+
+# Output the extension
+with open('file_extensions.txt', 'w') as f:
+    print('extension,count,platform,type', file=f)
+    for ext, cnt in exts.most_common():
+        print('%s,%s' % (ext, cnt), file=f)
+
+
+lang_dict = {'sh': 'bash', 'do': 'stata', 'jl': 'julia', 'py': 'python', 'R': 'R', 'r': 'R', 'c': 'C', 'cpp': 'C++',
+                 'm': 'Matlab', 'f': 'fortran', 'f90': 'fortran', 'sas': 'SAS', 'java': 'Java', '2012': 'stata',
+                 'sps': 'SPSS', 'Rhistory[1]': 'R', 'mx': 'Mathematica', 'replication': 'stata', 'php': 'PHP',
+                 'nb': 'Mathematica', 'sci': 'Scilab', 'shp': "ArcGIS"}
+columns = ['DOI', 'publication_date', 'total_size_kb', 'num_files', 'verified_note', 'bash', 'stata', 'julia', 'python',
+           'R', 'C', 'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS']
+
+with open('lang_info.csv', 'w', newline='') as h:
+    h_csv = csv.DictWriter(h, columns)
+    h_csv.writeheader()
+for dataset in datasets['data']['items']:
+    doi = dataset['global_id']
+    cache_file = 'cache/' + urllib.parse.quote_plus(str(doi))
+    with open(cache_file, 'r') as f:
+        r = json.load(f)
+    total_size = 0
+    verified_note = False
+    pub_date = r["ore:describes"]["schema:datePublished"]
+    files = r["ore:describes"]["ore:aggregates"]
+    num_files = len(files)
+    lang_num = {'bash': 0, 'stata': 0, 'julia': 0, 'python': 0, 'R': 0, 'C': 0, 'C++': 0, 'Matlab': 0, 'fortran': 0,
+                'SAS': 0, 'Java': 0, 'SPSS': 0, 'Mathematica': 0, 'PHP': 0, 'Scilab': 0, 'ArcGIS': 0}
+    for f in files:
+        total_size += f['dvcore:filesize']
+        file_extension = f['schema:name'].split('.')[-1]
+        try:
+            if lang_dict[file_extension] in lang_num:
+                lang_num[lang_dict[file_extension]] += 1
+        except KeyError:
+            continue
+    total_size_kb = round(total_size / 1024, 2)
+    try:
+        note = r["ore:describes"]["citation:Notes"]
+    except KeyError:
+        note = "There is no note in this dataset."
+    if 'independent verification' in note:
+        verified_note = True
+    out_dict = {'DOI': doi[4:], 'publication_date': pub_date, 'total_size_kb': total_size_kb, 'num_files': num_files,
+                'verified_note': verified_note}
+    out_dict.update(lang_num)
+    # with open('lang_info.csv', 'a', newline='') as h:
+    #     h_csv.writerows(out_dict)
+    print(out_dict)
+
+
