@@ -2,6 +2,7 @@ import os
 import csv
 import json
 import urllib
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from collections import Counter
@@ -62,15 +63,19 @@ lang_dict = {'sh': 'bash', 'do': 'stata', 'jl': 'julia', 'py': 'python', 'R': 'R
                  'nb': 'Mathematica', 'sci': 'Scilab', 'shp': "ArcGIS"}
 columns = ['DOI', 'publication_date', 'total_size_kb', 'num_files', 'verified_note', 'bash', 'stata', 'julia', 'python',
            'R', 'C', 'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS']
-
-with open('lang_info.csv', 'w', newline='') as h:
-    h_csv = csv.DictWriter(h, columns)
-    h_csv.writeheader()
+final_dict = {}
+i = 1
+# with open('lang_info.csv', 'w', newline='') as h:
+#     h_csv = csv.DictWriter(h, columns)
+#     h_csv.writeheader()
 for dataset in datasets['data']['items']:
     doi = dataset['global_id']
     cache_file = 'cache/' + urllib.parse.quote_plus(str(doi))
-    with open(cache_file, 'r') as f:
-        r = json.load(f)
+    try:
+        with open(cache_file, 'r') as f:
+            r = json.load(f)
+    except FileNotFoundError:
+        continue
     total_size = 0
     verified_note = False
     pub_date = r["ore:describes"]["schema:datePublished"]
@@ -96,8 +101,11 @@ for dataset in datasets['data']['items']:
     out_dict = {'DOI': doi[4:], 'publication_date': pub_date, 'total_size_kb': total_size_kb, 'num_files': num_files,
                 'verified_note': verified_note}
     out_dict.update(lang_num)
+    final_dict[i] = out_dict
+    i += 1
     # with open('lang_info.csv', 'a', newline='') as h:
     #     h_csv.writerows(out_dict)
-    print(out_dict)
-
-
+print(final_dict)
+out_data = pd.DataFrame.from_dict(final_dict, orient='index', columns=['DOI', 'publication_date', 'total_size_kb', 'num_files', 'verified_note', 'bash', 'stata', 'julia', 'python',
+       'R', 'C', 'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS'])
+out_data.to_csv('try.csv')
