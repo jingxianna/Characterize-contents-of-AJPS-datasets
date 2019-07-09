@@ -59,9 +59,7 @@ lang_dict = {'sh': 'bash', 'do': 'stata', 'jl': 'julia', 'py': 'python', 'R': 'R
                  'sps': 'SPSS', 'Rhistory[1]': 'R', 'mx': 'Mathematica', 'replication': 'stata', 'php': 'PHP',
                  'nb': 'Mathematica', 'sci': 'Scilab', 'shp': "ArcGIS"}
 final_data = []
-# with open('lang_info.csv', 'w', newline='') as h:
-#     h_csv = csv.DictWriter(h, columns)
-#     h_csv.writeheader()
+
 for dataset in datasets['data']['items']:
     doi = dataset['global_id']
     cache_file = 'cache/' + urllib.parse.quote_plus(str(doi))
@@ -95,11 +93,8 @@ for dataset in datasets['data']['items']:
     out_dict = {'DOI': doi[4:], 'publication_date': pub_date, 'total_size_kb': total_size_kb, 'num_files': num_files,
                 'verified_note': verified_note}
     out_dict.update(lang_num)
-    # final_dict[i] = out_dict
-    # i += 1
     final_data.append(out_dict)
-    # with open('lang_info.csv', 'a', newline='') as h:
-    #     h_csv.writerows(out_dict)
+
 out_data = pd.DataFrame(final_data, columns=['DOI', 'publication_date', 'total_size_kb', 'num_files', 'verified_note',
                                              'bash', 'stata', 'julia', 'python', 'R', 'C', 'C++', 'Matlab', 'fortran',
                                              'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS'])
