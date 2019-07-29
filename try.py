@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import json
 import urllib
@@ -69,20 +70,25 @@ for dataset in datasets['data']['items']:
     except FileNotFoundError:
         continue
     total_size = 0
+    codebook = []
     verified_note = False
     pub_date = r["ore:describes"]["schema:datePublished"]
+    title = r["ore:describes"]["citation:Title"][22:]
     files = r["ore:describes"]["ore:aggregates"]
     num_files = len(files)
     lang_num = {'bash': 0, 'stata': 0, 'julia': 0, 'python': 0, 'R': 0, 'C': 0, 'C++': 0, 'Matlab': 0, 'fortran': 0,
-                'SAS': 0, 'Java': 0, 'SPSS': 0, 'Mathematica': 0, 'PHP': 0, 'Scilab': 0, 'ArcGIS': 0}
+                'SAS': 0, 'Java': 0, 'SPSS': 0, 'Mathematica': 0, 'PHP': 0, 'Scilab': 0, 'ArcGIS': 0, 'code_sum': 0}
     for f in files:
         total_size += f['dvcore:filesize']
         file_extension = f['schema:name'].split('.')[-1]
+        if re.match(r'.*codebook.*', f['schema:name'], re.I) is not None:
+            codebook.append(re.match(r'.*codebook.*', f['schema:name'], re.I).group(0))
         try:
             if lang_dict[file_extension] in lang_num:
                 lang_num[lang_dict[file_extension]] += 1
         except KeyError:
             continue
+    lang_num['code_sum'] = sum(lang_num.values())
     total_size_kb = round(total_size / 1024, 2)
     try:
         note = r["ore:describes"]["citation:Notes"]
@@ -90,12 +96,13 @@ for dataset in datasets['data']['items']:
         note = "There is no note in this dataset."
     if 'independent verification' in note:
         verified_note = True
-    out_dict = {'DOI': doi[4:], 'publication_date': pub_date, 'total_size_kb': total_size_kb, 'num_files': num_files,
-                'verified_note': verified_note}
+    out_dict = {'DOI': doi[4:], 'title': title, 'publication_date': pub_date, 'total_size_kb': total_size_kb,
+                'num_files': num_files, 'codebook': codebook, 'verified_note': verified_note}
     out_dict.update(lang_num)
     final_data.append(out_dict)
 
-out_data = pd.DataFrame(final_data, columns=['DOI', 'publication_date', 'total_size_kb', 'num_files', 'verified_note',
-                                             'bash', 'stata', 'julia', 'python', 'R', 'C', 'C++', 'Matlab', 'fortran',
-                                             'SAS', 'Java', 'SPSS', 'Mathematica', 'PHP', 'Scilab', 'ArcGIS'])
+out_data = pd.DataFrame(final_data, columns=['DOI', 'title', 'publication_date', 'total_size_kb', 'num_files',
+                                             'codebook', 'verified_note', 'bash', 'stata', 'julia', 'python', 'R',
+                                             'C', 'C++', 'Matlab', 'fortran', 'SAS', 'Java', 'SPSS', 'Mathematica',
+                                             'PHP', 'Scilab', 'ArcGIS', 'code_sum'])
 out_data.to_csv('try.csv', index=False)
